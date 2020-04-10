@@ -11,7 +11,9 @@
 
 namespace Symfony\Component\Form\Tests\Extension\Core\Type;
 
+use Symfony\Component\Form\Exception\InvalidConfigurationException;
 use Symfony\Component\Form\Form;
+use Symfony\Component\Form\Tests\Fixtures\NotMappedType;
 
 class RepeatedTypeTest extends BaseTypeTest
 {
@@ -78,6 +80,20 @@ class RepeatedTypeTest extends BaseTypeTest
         $this->assertFalse($form['second']->isRequired());
     }
 
+
+    public function testMappedOverridesDefault()
+    {
+        $form = $this->factory->create(NotMappedType::class);
+        $this->assertFalse($form->getConfig()->getMapped());
+
+        $form = $this->factory->create(static::TESTED_TYPE, null, [
+            'type' => NotMappedType::class,
+        ]);
+
+        $this->assertTrue($form['first']->getConfig()->getMapped());
+        $this->assertTrue($form['second']->getConfig()->getMapped());
+    }
+
     public function testSetInvalidOptions()
     {
         $this->expectException('Symfony\Component\OptionsResolver\Exception\InvalidOptionsException');
@@ -103,6 +119,29 @@ class RepeatedTypeTest extends BaseTypeTest
             'type' => TextTypeTest::TESTED_TYPE,
             'second_options' => 'bad value',
         ]);
+    }
+
+    /**
+     * @param string $configurationKey
+     * @dataProvider notMappedConfigurationKeys
+     */
+    public function testNotMappedInner($configurationKey)
+    {
+        $this->expectException(InvalidConfigurationException::class);
+        $this->expectExceptionMessage('Inner types must be mapped');
+
+        $this->factory->create(static::TESTED_TYPE, null, [
+            'type' => TextTypeTest::TESTED_TYPE,
+            $configurationKey => ['mapped' => false],
+        ]);
+    }
+
+    public function notMappedConfigurationKeys()
+    {
+        return [
+            ['first_options'],
+            ['second_options'],
+        ];
     }
 
     public function testSetErrorBubblingToTrue()

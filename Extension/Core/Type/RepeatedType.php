@@ -12,6 +12,7 @@
 namespace Symfony\Component\Form\Extension\Core\Type;
 
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Exception\InvalidConfigurationException;
 use Symfony\Component\Form\Extension\Core\DataTransformer\ValueToDuplicatesTransformer;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -36,8 +37,8 @@ class RepeatedType extends AbstractType
                 $options['first_name'],
                 $options['second_name'],
             ]))
-            ->add($options['first_name'], $options['type'], array_merge($options['options'], $options['first_options']))
-            ->add($options['second_name'], $options['type'], array_merge($options['options'], $options['second_options']))
+            ->add($options['first_name'], $options['type'], $this->mergeOptions($options['options'], $options['first_options']))
+            ->add($options['second_name'], $options['type'], $this->mergeOptions($options['options'], $options['second_options']))
         ;
     }
 
@@ -67,5 +68,20 @@ class RepeatedType extends AbstractType
     public function getBlockPrefix()
     {
         return 'repeated';
+    }
+
+    private function mergeOptions(array $fieldOptions, array $innerOptions)
+    {
+        $mergedOptions = array_merge($fieldOptions, $innerOptions);
+
+        if (array_key_exists('mapped', $mergedOptions)) {
+            if ($mergedOptions['mapped'] === false) {
+                throw new InvalidConfigurationException('Inner types must be mapped');
+            }
+        } else {
+            $mergedOptions['mapped'] = true;
+        }
+
+        return $mergedOptions;
     }
 }
